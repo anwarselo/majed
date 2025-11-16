@@ -91,16 +91,27 @@ async function getPublicAssetUrl(path: string): Promise<string> {
   return data.publicUrl;
 }
 
-async function extractAssetText(asset: Asset): Promise<string> {
+async function fetchAssetBuffer(asset: Asset): Promise<Buffer> {
   const env = getServerEnv();
   const supabase = getServiceSupabase();
   const download = await supabase.storage.from(env.SUPABASE_BUCKET).download(asset.file_path);
 
-  if (download.error || !download.data) {
-    throw new Error(download.error?.message ?? "Unable to download asset");
+  if (!download.error && download.data) {
+    return Buffer.from(await download.data.arrayBuffer());
   }
 
-  const buffer = Buffer.from(await download.data.arrayBuffer());
+  const publicUrl = await getPublicAssetUrl(asset.file_path);
+  const response = await fetch(publicUrl);
+
+  if (!response.ok) {
+    throw new Error(`Unable to fetch asset from public URL (${response.status})`);
+  }
+
+  return Buffer.from(await response.arrayBuffer());
+}
+
+async function extractAssetText(asset: Asset): Promise<string> {
+  const buffer = await fetchAssetBuffer(asset);
 
   if (asset.mime_type === "application/pdf") {
     return pdfToText(buffer);
