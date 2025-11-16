@@ -1,7 +1,17 @@
 import { spawn } from "node:child_process";
 import { getServerEnv } from "./env";
 
-export async function extractTextWithOcr(buffer: Buffer): Promise<string | null> {
+type OpenAIImageContent = {
+  type: "image_url";
+  image_url: { url: string };
+};
+
+type OpenAITextContent = {
+  type: "text";
+  text: string;
+};
+
+export async function extractTextWithOcr(buffer: Buffer, mimeType?: string): Promise<string | null> {
   const env = getServerEnv();
 
   if (!env.OCR_ENABLED) {
@@ -9,7 +19,7 @@ export async function extractTextWithOcr(buffer: Buffer): Promise<string | null>
   }
 
   if (env.OCR_USE_DEEPSEEK) {
-    const deepseekText = await extractWithDeepSeek(buffer);
+    const deepseekText = await extractWithDeepSeek(buffer, mimeType);
     if (deepseekText) {
       return deepseekText;
     }
@@ -18,24 +28,44 @@ export async function extractTextWithOcr(buffer: Buffer): Promise<string | null>
   return extractWithTesseract(buffer);
 }
 
-async function extractWithDeepSeek(buffer: Buffer): Promise<string | null> {
+async function extractWithDeepSeek(buffer: Buffer, mimeType?: string): Promise<string | null> {
   const env = getServerEnv();
 
   if (!env.DEEPSEEK_OCR_API_KEY || !env.DEEPSEEK_OCR_API_URL) {
     return null;
   }
 
-  const response = await fetch(env.DEEPSEEK_OCR_API_URL, {
+  const endpoint = new URL("/chat/completions", env.DEEPSEEK_OCR_API_URL).toString();
+  const imageMime = mimeType && mimeType.startsWith("image/") ? mimeType : "image/png";
+  const dataUrl = `data:${imageMime};base64,${buffer.toString("base64")}`;
+
+  const response = await fetch(endpoint, {
     method: "POST",
     headers: {
       "content-type": "application/json",
       authorization: `Bearer ${env.DEEPSEEK_OCR_API_KEY}`,
     },
     body: JSON.stringify({
-      document_base64: buffer.toString("base64"),
-      compression_ratio: env.DEEPSEEK_OCR_COMPRESSION_RATIO ?? 10,
-      batch_size: env.DEEPSEEK_OCR_BATCH_SIZE ?? 8,
-      device: env.DEEPSEEK_OCR_DEVICE ?? "cuda:0",
+      model: env.DEEPSEEK_OCR_MODEL,
+      max_tokens: env.DEEPSEEK_OCR_MAX_TOKENS,
+      stream: false,
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "image_url",
+              image_url: {
+                url: dataUrl,
+              },
+            } as OpenAIImageContent,
+            {
+              type: "text",
+              text: "<|grounding|>OCR this image.",
+            } as OpenAITextContent,
+          ],
+        },
+      ],
     }),
   });
 
@@ -43,8 +73,30 @@ async function extractWithDeepSeek(buffer: Buffer): Promise<string | null> {
     throw new Error(`DeepSeek OCR request failed with status ${response.status}`);
   }
 
-  const payload = (await response.json()) as { text?: string };
-  return payload.text?.trim() || null;
+  const payload = (await response.json()) as {
+    choices?: Array<{
+      message?: {
+        content?: string | Array<{ type: string; text?: string }>;
+      };
+    }>;
+  };
+
+  const content = payload.choices?.[0]?.message?.content;
+
+  if (typeof content === "string") {
+    return content.trim();
+  }
+
+  if (Array.isArray(content)) {
+    const text = content
+      .filter((part): part is OpenAITextContent => part.type === "text" && typeof part.text === "string")
+      .map((part) => part.text)
+      .join("\n")
+      .trim();
+    return text || null;
+  }
+
+  return null;
 }
 
 async function extractWithTesseract(buffer: Buffer): Promise<string | null> {

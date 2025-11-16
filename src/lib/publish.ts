@@ -111,7 +111,7 @@ async function extractAssetText(asset: Asset): Promise<string> {
   }
 
   if (asset.mime_type.startsWith("image/")) {
-    return (await extractTextWithOcr(buffer)) || "";
+    return (await extractTextWithOcr(buffer, asset.mime_type)) || "";
   }
 
   return "";
