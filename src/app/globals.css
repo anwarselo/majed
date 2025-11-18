@@ -39,7 +39,7 @@ body {
 }
 
 .card {
-  width: min(500px, 100%);
+  width: min(1200px, 100%);
   background: #fff;
   color: #111;
   border-radius: 12px;
