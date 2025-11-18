@@ -32,7 +32,7 @@ export async function summarizeText(input: string): Promise<string> {
   try {
     const response = await client.chat.completions.create({
       model: env.LLM_MODEL_NAME,
-      max_tokens: env.LLM_MAX_TOKENS,
+      max_completion_tokens: env.LLM_MAX_TOKENS,
       messages: [
         {
           role: "system",
