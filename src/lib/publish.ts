@@ -43,18 +43,52 @@ export async function publishBusiness(businessId: string) {
   const url = `${env.BASE_URL}/b/${business.slug}`;
   const jsonld = jsonLdForBusiness({ ...business, description: aboutText }, env.BASE_URL);
 
-  await supabase
+  // Check if page already exists
+  const { data: existingPage } = await supabase
     .from("majed_public_pages")
-    .upsert(
-      {
+    .select("id")
+    .eq("business_id", business.id)
+    .single();
+
+  let pageData;
+  let pageError;
+
+  if (existingPage) {
+    // Update existing page
+    const result = await supabase
+      .from("majed_public_pages")
+      .update({
+        url,
+        html_render: html,
+        jsonld,
+        last_published_at: new Date().toISOString(),
+      })
+      .eq("business_id", business.id)
+      .select();
+    pageData = result.data;
+    pageError = result.error;
+  } else {
+    // Insert new page
+    const result = await supabase
+      .from("majed_public_pages")
+      .insert({
         business_id: business.id,
         url,
         html_render: html,
         jsonld,
         last_published_at: new Date().toISOString(),
-      },
-      { onConflict: "business_id" },
-    );
+      })
+      .select();
+    pageData = result.data;
+    pageError = result.error;
+  }
+
+  if (pageError) {
+    console.error("Failed to save public_pages:", pageError);
+    throw new Error(`Failed to publish page: ${pageError.message}`);
+  }
+  
+  console.log("Published page:", pageData);
 
   const indexResponse = await pingIndexNow(url);
   await supabase.from("majed_index_events").insert({
