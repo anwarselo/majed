@@ -48,9 +48,12 @@ export interface Database {
     Tables: {
       visibletoai_businesses: {
         Row: Business;
-        Insert: Partial<Omit<Business, "id" | "created_at" | "updated_at">> & {
-          slug: string;
-          name: string;
+        Insert: Omit<Business, "id" | "created_at" | "updated_at"> & {
+          description?: string | null;
+          website?: string | null;
+          phone?: string | null;
+          address_json?: Json | null;
+          verified?: boolean;
         };
         Update: Partial<Business>;
       };

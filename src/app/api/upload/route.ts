@@ -41,15 +41,7 @@ export async function POST(request: Request) {
 
   const { data: business, error: bizError } = await supabase
     .from("visibletoai_businesses")
-    .insert({ 
-      name, 
-      slug,
-      description: null,
-      website: null,
-      phone: null,
-      address_json: null,
-      verified: false
-    })
+    .insert({ name, slug })
     .select("*")
     .single();
 
