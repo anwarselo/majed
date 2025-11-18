@@ -39,12 +39,6 @@ export default function Home() {
   return (
     <main className="page">
       <section className="card">
-        <h1>Publish your business microsite</h1>
-        <p className="muted">
-          Upload a PDF, text file, or image. We will extract the content, publish a microsite at
-          /b/slug, and ping search engines for you.
-        </p>
-
         <form className="form" onSubmit={handleSubmit}>
           <label>
             Business name
