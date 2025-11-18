@@ -12,7 +12,7 @@ export async function GET() {
     .order("last_published_at", { ascending: false })) as any;
 
   const urls = (pages || []).map((page: any) => ({
-    loc: page.url.replace("https://yourdomain.com", env.BASE_URL),
+    loc: page.url,
     lastmod: page.last_published_at,
     changefreq: "monthly",
     priority: 0.8,
@@ -31,7 +31,7 @@ ${urls.map((u: any) => `  <url>
   return new NextResponse(sitemap, { 
     headers: { 
       "content-type": "application/xml",
-      "cache-control": "public, max-age=3600, s-maxage=3600"
+      "cache-control": "public, max-age=60, s-maxage=60, must-revalidate"
     } 
   });
 }
