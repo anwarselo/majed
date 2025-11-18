@@ -39,11 +39,11 @@ export async function POST(request: Request) {
   const supabase = getServiceSupabase();
   const slug = generateSlug(name);
 
-  const { data: business, error: bizError } = await supabase
+  const { data: business, error: bizError } = (await supabase
     .from("visibletoai_businesses")
-    .insert({ name, slug })
+    .insert({ name, slug } as any)
     .select("*")
-    .single();
+    .single()) as any;
 
   if (bizError || !business) {
     return NextResponse.json(
@@ -69,7 +69,7 @@ export async function POST(request: Request) {
     file_path: storagePath,
     mime_type: file.type,
     sha256,
-  });
+  } as any);
 
   if (assetInsert.error) {
     return NextResponse.json({ error: assetInsert.error.message }, { status: 500 });

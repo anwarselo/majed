@@ -8,13 +8,13 @@ type Params = {
 
 async function IndexNowStatus({ businessId }: { businessId: string }) {
   const supabase = getServiceSupabase();
-  const { data: event } = await supabase
+  const { data: event } = (await supabase
     .from("visibletoai_index_events")
     .select("status, created_at")
     .eq("business_id", businessId)
     .order("created_at", { ascending: false })
     .limit(1)
-    .single();
+    .single()) as any;
 
   if (!event) {
     return (
@@ -37,11 +37,11 @@ async function IndexNowStatus({ businessId }: { businessId: string }) {
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   const supabase = getServiceSupabase();
-  const { data } = await supabase
+  const { data } = (await supabase
     .from("visibletoai_businesses")
     .select("name, description, public_pages:visibletoai_public_pages(html_render)")
     .eq("slug", slug)
-    .single();
+    .single()) as any;
 
   if (!data) {
     return { title: "Business Not Found" };
@@ -76,11 +76,11 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 export default async function BusinessPage({ params }: Params) {
   const { slug } = await params;
   const supabase = getServiceSupabase();
-  const { data, error } = await supabase
+  const { data, error } = (await supabase
     .from("visibletoai_businesses")
     .select("*, public_pages:visibletoai_public_pages(*)")
     .eq("slug", slug)
-    .single();
+    .single()) as any;
 
   if (error || !data) {
     notFound();

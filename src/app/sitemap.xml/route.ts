@@ -6,12 +6,12 @@ export async function GET() {
   const env = getServerEnv();
   const supabase = getServiceSupabase();
   
-  const { data: pages } = await supabase
+  const { data: pages } = (await supabase
     .from("visibletoai_public_pages")
     .select("url, last_published_at")
-    .order("last_published_at", { ascending: false });
+    .order("last_published_at", { ascending: false })) as any;
 
-  const urls = (pages || []).map((page) => ({
+  const urls = (pages || []).map((page: any) => ({
     loc: page.url.replace("https://yourdomain.com", env.BASE_URL),
     lastmod: page.last_published_at,
     changefreq: "monthly",
@@ -20,7 +20,7 @@ export async function GET() {
 
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${urls.map((u) => `  <url>
+${urls.map((u: any) => `  <url>
     <loc>${u.loc}</loc>
     <lastmod>${u.lastmod}</lastmod>
     <changefreq>${u.changefreq}</changefreq>
