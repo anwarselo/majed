@@ -31,9 +31,15 @@ export async function publishBusiness(businessId: string) {
     await supabase.from("visibletoai_assets").update({ ocr_text: extractedText }).eq("id", asset.id);
   }
 
+  console.log("[Publish] Starting text summarization...");
+  const inputForSummarization = extractedText || business.description || "";
+  console.log(`[Publish] Input text length: ${inputForSummarization.length} chars`);
+  
   const aboutText =
-    (await summarizeText(extractedText || business.description || "")) ||
+    (await summarizeText(inputForSummarization)) ||
     "Text extraction unavailable.";
+  
+  console.log(`[Publish] Summarization result: ${aboutText.length} chars`);
 
   const html = renderBusinessHtml({
     business: { ...business, description: aboutText },

@@ -17,6 +17,7 @@ function getOpenAiClient(): OpenAI | null {
 export async function summarizeText(input: string): Promise<string> {
   const trimmed = input.trim();
   if (!trimmed) {
+    console.log("[LLM] Input is empty, skipping summarization");
     return "";
   }
 
@@ -24,10 +25,12 @@ export async function summarizeText(input: string): Promise<string> {
   const client = getOpenAiClient();
 
   if (!client) {
+    console.warn("[LLM] No OpenAI client available (missing API key), returning raw text");
     return trimmed;
   }
 
   const limited = trimmed.slice(0, 6000);
+  console.log(`[LLM] Summarizing text (${limited.length} chars) with model: ${env.LLM_MODEL_NAME}`);
   
   try {
     const response = await client.chat.completions.create({
@@ -46,9 +49,11 @@ export async function summarizeText(input: string): Promise<string> {
       ],
     });
 
-    return response.choices[0]?.message?.content?.trim() || trimmed;
+    const result = response.choices[0]?.message?.content?.trim() || trimmed;
+    console.log(`[LLM] Summarization complete (${result.length} chars)`);
+    return result;
   } catch (error) {
-    console.warn("LLM summarization failed, returning raw text:", error);
+    console.error("[LLM] Summarization failed, returning raw text:", error);
     return trimmed;
   }
 }
