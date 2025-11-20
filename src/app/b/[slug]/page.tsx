@@ -102,14 +102,14 @@ export default async function BusinessPage({ params }: Params) {
 
   return (
     <main className="page">
-      <section className="card">
+      <article className="card">
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(page.jsonld) }}
         />
-        <article dangerouslySetInnerHTML={{ __html: page.html_render }} />
+        <div dangerouslySetInnerHTML={{ __html: page.html_render }} />
         <IndexNowStatus businessId={data.id} />
-      </section>
+      </article>
     </main>
   );
 }
